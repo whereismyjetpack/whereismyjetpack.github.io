@@ -161,6 +161,10 @@ localDev:
   enabled: false
   path: /Users/me/git/myapp
   storageClassName: local-path
+
+additionalEnv: <span style="color:#f92672">[]</span>
+
+
 </code></pre></div><p>we have a &ldquo;localDev&rdquo; feature flag, that when enabled, creates a <code>local-path</code> pv, and pvc</p>
 <h1 id="persistenceyaml">persistence.yaml<a href="#persistenceyaml" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#f92672">{{</span>- <span style="color:#66d9ef">if</span> .Values.localDev.enabled <span style="color:#f92672">}}</span>
@@ -216,6 +220,10 @@ spec:
         <span style="color:#f92672">{{</span>- toYaml .Values.podSecurityContext | nindent <span style="color:#ae81ff">8</span> <span style="color:#f92672">}}</span>
       containers:
         - name: <span style="color:#f92672">{{</span> .Chart.Name <span style="color:#f92672">}}</span>
+          command:
+          <span style="color:#f92672">{{</span>- toYaml .Values.command | nindent <span style="color:#ae81ff">12</span> <span style="color:#f92672">}}</span>
+          env:
+          <span style="color:#f92672">{{</span>- toYaml .Values.additionalEnv | nindent <span style="color:#ae81ff">12</span> <span style="color:#f92672">}}</span>
           <span style="color:#f92672">{{</span>- <span style="color:#66d9ef">if</span> .Values.localDev.enabled <span style="color:#f92672">}}</span>
           volumeMounts:
             - name: data

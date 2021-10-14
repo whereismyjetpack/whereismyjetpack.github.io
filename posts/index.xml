@@ -36,6 +36,10 @@ localDev:
   enabled: false
   path: /Users/me/git/myapp
   storageClassName: local-path
+
+additionalEnv: &lt;span style=&#34;color:#f92672&#34;&gt;[]&lt;/span&gt;
+
+
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;we have a &amp;ldquo;localDev&amp;rdquo; feature flag, that when enabled, creates a &lt;code&gt;local-path&lt;/code&gt; pv, and pvc&lt;/p&gt;
 &lt;h1 id=&#34;persistenceyaml&#34;&gt;persistence.yaml&lt;/h1&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt;- &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; .Values.localDev.enabled &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
@@ -91,6 +95,10 @@ spec:
         &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt;- toYaml .Values.podSecurityContext | nindent &lt;span style=&#34;color:#ae81ff&#34;&gt;8&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
       containers:
         - name: &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt; .Chart.Name &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+          command:
+          &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt;- toYaml .Values.command | nindent &lt;span style=&#34;color:#ae81ff&#34;&gt;12&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+          env:
+          &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt;- toYaml .Values.additionalEnv | nindent &lt;span style=&#34;color:#ae81ff&#34;&gt;12&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
           &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt;- &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; .Values.localDev.enabled &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
           volumeMounts:
             - name: data
