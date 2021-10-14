@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+    <title>Local Development With Rancher Desktop :: Where Is My Jetpack?</title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="How I develop locally using rancher-desktop" />
+<meta name="keywords" content=", " />
+<meta name="robots" content="noodp" />
+<link rel="canonical" href="https://whereismyjetpack.github.io/posts/local-development-with-rancher-desktop/" />
+
+
+
+
+<link rel="stylesheet" href="https://whereismyjetpack.github.io/assets/style.css">
+
+  <link rel="stylesheet" href="https://whereismyjetpack.github.io/assets/blue.css">
+
+
+
+
+
+
+<link rel="apple-touch-icon" href="https://whereismyjetpack.github.io/img/apple-touch-icon-192x192.png">
+
+  <link rel="shortcut icon" href="https://whereismyjetpack.github.io/img/favicon/blue.png">
+
+
+
+<meta name="twitter:card" content="summary" />
+
+  
+    <meta name="twitter:site" content="" />
+  
+    <meta name="twitter:creator" content="" />
+
+
+
+<meta property="og:locale" content="en" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Local Development With Rancher Desktop">
+<meta property="og:description" content="How I develop locally using rancher-desktop" />
+<meta property="og:url" content="https://whereismyjetpack.github.io/posts/local-development-with-rancher-desktop/" />
+<meta property="og:site_name" content="Where Is My Jetpack?" />
+
+  <meta property="og:image" content="https://whereismyjetpack.github.io">
+
+<meta property="og:image:width" content="2048">
+<meta property="og:image:height" content="1024">
+
+
+  <meta property="article:published_time" content="2021-10-14 08:36:13 -0400 EDT" />
+
+
+
+
+
+
+
+
+
+
+
+
+</head>
+<body class="blue">
+
+
+<div class="container headings--one-size">
+
+  <header class="header">
+  <div class="header__inner">
+    <div class="header__logo">
+      <a href="/">
+  <div class="logo">
+    Where is My Jetpack?
+  </div>
+</a>
+
+    </div>
+    
+      <div class="menu-trigger">menu</div>
+    
+  </div>
+  
+    <nav class="menu">
+  <ul class="menu__inner menu__inner--desktop">
+    
+      
+        
+          <li><a href="/about">About</a></li>
+        
+      
+      
+    
+
+    
+  </ul>
+
+  <ul class="menu__inner menu__inner--mobile">
+    
+      
+        <li><a href="/about">About</a></li>
+      
+    
+    
+  </ul>
+</nav>
+
+  
+</header>
+
+
+  <div class="content">
+    
+<div class="post">
+  <h1 class="post-title">
+    <a href="https://whereismyjetpack.github.io/posts/local-development-with-rancher-desktop/">Local Development With Rancher Desktop</a></h1>
+  <div class="post-meta">
+    
+      <span class="post-date">
+        2021-10-14 
+      </span>
+    
+    
+  </div>
+
+  
+  <span class="post-tags">
+    
+    #<a href="https://whereismyjetpack.github.io/tags/"></a>&nbsp;
+    
+    #<a href="https://whereismyjetpack.github.io/tags/"></a>&nbsp;
+    
+  </span>
+  
+
+  
+
+  
+
+  <div class="post-content"><div>
+        <p>In this example, I&rsquo;m going to take an existing rails application, and do some local development in rancher-desktop. This guide requires at least rancher-desktop 0.6.0</p>
+<p>First I pull down our kubernetes configuration into the <code>pwd</code> and add that to .gitignore</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone git@github.com:myorg/myapp-config.git
+echo <span style="color:#e6db74">&#34;myapp-config&#34;</span> &gt;&gt; .gitignore
+</code></pre></div><p>Then I set the environment variable CHART_LOCATION to this location</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">export CHART_LOCATION<span style="color:#f92672">=</span>myapp-config/chart
+</code></pre></div><p>in real life, i use direnv (<a href="https://direnv.net/">https://direnv.net/</a>) to manage my project specific configuration</p>
+<p>Then, I modify the apps helm chart to be compatible with my local development workflow. This mainly consists of</p>
+<p>1.) overriding the main apps <code>command</code>
+2.) mounting my <code>pwd</code> into the docker containers <code>WORKDIR</code>
+3.) injecting some variables into the container</p>
+<h1 id="valuesyaml">values.yaml<a href="#valuesyaml" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">...
+localDev:
+  enabled: false
+  path: /Users/me/git/myapp
+  storageClassName: local-path
+</code></pre></div><p>we have a &ldquo;localDev&rdquo; feature flag, that when enabled, creates a <code>local-path</code> pv, and pvc</p>
+<h1 id="persistenceyaml">persistence.yaml<a href="#persistenceyaml" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#f92672">{{</span>- <span style="color:#66d9ef">if</span> .Values.localDev.enabled <span style="color:#f92672">}}</span>
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+    pv.kubernetes.io/provisioned-by: rancher.io/local-path
+  name: <span style="color:#f92672">{{</span> .Release.Name <span style="color:#f92672">}}</span>-pv
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 8Gi
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: <span style="color:#f92672">{{</span> .Release.Name <span style="color:#f92672">}}</span>-data
+    namespace: <span style="color:#f92672">{{</span> .Release.Namespace <span style="color:#f92672">}}</span>
+  hostPath:
+    path: <span style="color:#f92672">{{</span> .Values.localDev.path <span style="color:#f92672">}}</span>
+    type: DirectoryOrCreate
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: <span style="color:#f92672">{{</span> .Values.localDev.storageClassName <span style="color:#f92672">}}</span>
+<span style="color:#f92672">{{</span>- end <span style="color:#f92672">}}</span>
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: <span style="color:#f92672">{{</span> .Release.Name <span style="color:#f92672">}}</span>-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 8Gi
+  storageClassName: <span style="color:#f92672">{{</span> .Values.localDev.storageClassName <span style="color:#f92672">}}</span>
+<span style="color:#f92672">{{</span>- end <span style="color:#f92672">}}</span>
+</code></pre></div><h1 id="deploymentyaml">deployment.yaml<a href="#deploymentyaml" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">apiVersion: apps/v1
+kind: Deployment
+metadata:
+spec:
+  template:
+    spec:
+      volumes:
+        <span style="color:#f92672">{{</span>- <span style="color:#66d9ef">if</span> .Values.localDev.enabled <span style="color:#f92672">}}</span>
+        - name: data
+          persistentVolumeClaim:
+            claimName: <span style="color:#f92672">{{</span> .Release.Name <span style="color:#f92672">}}</span>-data
+        <span style="color:#f92672">{{</span>- end <span style="color:#f92672">}}</span>
+        <span style="color:#f92672">{{</span>- toYaml .Values.podSecurityContext | nindent <span style="color:#ae81ff">8</span> <span style="color:#f92672">}}</span>
+      containers:
+        - name: <span style="color:#f92672">{{</span> .Chart.Name <span style="color:#f92672">}}</span>
+          <span style="color:#f92672">{{</span>- <span style="color:#66d9ef">if</span> .Values.localDev.enabled <span style="color:#f92672">}}</span>
+          volumeMounts:
+            - name: data
+              mountPath: /app/app
+              subPath: app
+            - name: data
+              mountPath: /app/config
+              subPath: config
+            - name: data
+              mountPath: /app/lib
+              subPath: lib
+            - name: data
+              mountPath: /app/lib
+              subPath: lib
+            - name: data
+              mountPath: /app/Gemfile
+              subPath: Gemfile
+            - name: data
+              mountPath: /app/Gemfile.lock
+              subPath: Gemfile.lock
+            - name: data
+              mountPath: /app/package.json
+              subPath: package.json
+            - name: data
+              mountPath: /app/yarn.lock
+              subPath: yarn.lock
+          <span style="color:#f92672">{{</span>- end <span style="color:#f92672">}}</span>
+...
+</code></pre></div><p>In the deployment maniest, we mount the pv we created above into the apps workdir. in the example above, I only mount in the directories and paths that I know churn often. If we were to mount in the whole $pwd we&rsquo;d have terribly slow development due to the speed of <code>local-path</code> pv.</p>
+<p>I then wrap the whole thing up into a small shell script. we use nerdctl to build the image into the k8s.io namespace (so that kuberentes can pick it up), and then deploy the helm chart into the <code>rancher-destkop</code> context</p>
+<h1 id="bindeploy-localsh">./bin/deploy-local.sh<a href="#bindeploy-localsh" class="hanchor" ariaLabel="Anchor">&#8983;</a> </h1>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#!/bin/bash
+</span><span style="color:#75715e"></span>
+tag<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>uuidgen<span style="color:#66d9ef">)</span>
+repo<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>basename <span style="color:#66d9ef">$(</span>pwd<span style="color:#66d9ef">))</span>
+chart_location<span style="color:#f92672">=</span><span style="color:#e6db74">${</span>CHART_LOCATION<span style="color:#e6db74">}</span>
+
+<span style="color:#75715e"># make sure we are in the rancher-desktop context,</span>
+kubectx rancher-desktop
+kubectl create namespace $repo
+kubens $repo
+
+<span style="color:#75715e"># build image into k8s.io namespace (so rancher can pull it)</span>
+nerdctl -n k8s.io build -t $repo:$tag .
+
+helm upgrade --install $repo <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --set image.repository<span style="color:#f92672">=</span>$repo <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --set image.tag<span style="color:#f92672">=</span>$tag <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --set localDev.enabled<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;true&#39;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --set localDev.path<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#66d9ef">$(</span>pwd<span style="color:#66d9ef">)</span><span style="color:#e6db74">&#34;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --set command<span style="color:#f92672">={</span>sleep,infinity<span style="color:#f92672">}</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --set redis.storageClass<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;local-path&#39;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --set <span style="color:#e6db74">&#39;additionalEnv[0].name&#39;</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SYMWS_PIN&#34;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --set <span style="color:#e6db74">&#39;additionalEnv[0].value&#39;</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>SYMWS_PIN<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --set <span style="color:#e6db74">&#39;additionalEnv[1].name&#39;</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SYMWS_URL&#34;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --set <span style="color:#e6db74">&#39;additionalEnv[1].value&#39;</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>SYMWS_URL<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --set <span style="color:#e6db74">&#39;additionalEnv[2].name&#39;</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;SYMWS_USERNAME&#34;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  --set <span style="color:#e6db74">&#39;additionalEnv[2].value&#39;</span><span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>SYMWS_USERNAME<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>  $chart_location
+</code></pre></div><p>once the chart has been deployed, i &ldquo;pop a shell&rdquo; into the app container, set the rails env, and startup the app</p>
+<pre tabindex="0"><code>kubectl exec -it $(kubectl get pods -l app.kubernetes.io/name=app -o name) -- bash
+bundle exec rails s -b '0.0.0.0'
+</code></pre><p>I run <code>rails s</code> by hand, instead of allowing the containers <code>command:</code> to do it, so that i can have an shell that i can <code>ctrl+c</code> and a shell that <code>binding.pry</code> works with.</p>
+<p>Lastly, I do a port forward to the pod, and party</p>
+<pre tabindex="0"><code>kubectl port-forward $(kubectl get pods -l app.kubernetes.io/name=app -o name) 3000:3000
+</code></pre>
+      </div></div>
+
+  
+  
+  
+
+  
+
+</div>
+
+  </div>
+
+  
+    <footer class="footer">
+  <div class="footer__inner">
+    
+      <div class="copyright">
+        <span>© 2021 Powered by <a href="http://gohugo.io">Hugo</a></span>
+    
+        <span>:: Theme made by <a href="https://twitter.com/panr">panr</a></span>
+      </div>
+  </div>
+</footer>
+
+<script src="https://whereismyjetpack.github.io/assets/main.js"></script>
+<script src="https://whereismyjetpack.github.io/assets/prism.js"></script>
+
+
+
+
+
+
+
+  
+</div>
+
+</body>
+</html>

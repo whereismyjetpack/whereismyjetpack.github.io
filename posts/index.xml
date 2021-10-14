@@ -1,22 +1,160 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Posts on Terminal</title>
-    <link>/posts/</link>
-    <description>Recent content in Posts on Terminal</description>
+    <title>Posts on Where Is My Jetpack?</title>
+    <link>https://whereismyjetpack.github.io/posts/</link>
+    <description>Recent content in Posts on Where Is My Jetpack?</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    
-	<atom:link href="/posts/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <lastBuildDate>Thu, 14 Oct 2021 08:36:13 -0400</lastBuildDate><atom:link href="https://whereismyjetpack.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>My first Post</title>
-      <link>/posts/my-first-post/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <title>Local Development With Rancher Desktop</title>
+      <link>https://whereismyjetpack.github.io/posts/local-development-with-rancher-desktop/</link>
+      <pubDate>Thu, 14 Oct 2021 08:36:13 -0400</pubDate>
       
-      <guid>/posts/my-first-post/</guid>
-      <description>is this where the text goes?</description>
+      <guid>https://whereismyjetpack.github.io/posts/local-development-with-rancher-desktop/</guid>
+      <description>In this example, I&amp;rsquo;m going to take an existing rails application, and do some local development in rancher-desktop. This guide requires at least rancher-desktop 0.6.0
+First I pull down our kubernetes configuration into the pwd and add that to .gitignore
+git clone git@github.com:myorg/myapp-config.git echo &amp;#34;myapp-config&amp;#34; &amp;gt;&amp;gt; .gitignore Then I set the environment variable CHART_LOCATION to this location
+export CHART_LOCATION=myapp-config/chart in real life, i use direnv (https://direnv.net/) to manage my project specific configuration</description>
+      <content>&lt;p&gt;In this example, I&amp;rsquo;m going to take an existing rails application, and do some local development in rancher-desktop. This guide requires at least rancher-desktop 0.6.0&lt;/p&gt;
+&lt;p&gt;First I pull down our kubernetes configuration into the &lt;code&gt;pwd&lt;/code&gt; and add that to .gitignore&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;git clone git@github.com:myorg/myapp-config.git
+echo &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;myapp-config&amp;#34;&lt;/span&gt; &amp;gt;&amp;gt; .gitignore
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Then I set the environment variable CHART_LOCATION to this location&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;export CHART_LOCATION&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;myapp-config/chart
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;in real life, i use direnv (&lt;a href=&#34;https://direnv.net/&#34;&gt;https://direnv.net/&lt;/a&gt;) to manage my project specific configuration&lt;/p&gt;
+&lt;p&gt;Then, I modify the apps helm chart to be compatible with my local development workflow. This mainly consists of&lt;/p&gt;
+&lt;p&gt;1.) overriding the main apps &lt;code&gt;command&lt;/code&gt;
+2.) mounting my &lt;code&gt;pwd&lt;/code&gt; into the docker containers &lt;code&gt;WORKDIR&lt;/code&gt;
+3.) injecting some variables into the container&lt;/p&gt;
+&lt;h1 id=&#34;valuesyaml&#34;&gt;values.yaml&lt;/h1&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;...
+localDev:
+  enabled: false
+  path: /Users/me/git/myapp
+  storageClassName: local-path
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;we have a &amp;ldquo;localDev&amp;rdquo; feature flag, that when enabled, creates a &lt;code&gt;local-path&lt;/code&gt; pv, and pvc&lt;/p&gt;
+&lt;h1 id=&#34;persistenceyaml&#34;&gt;persistence.yaml&lt;/h1&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt;- &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; .Values.localDev.enabled &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+    pv.kubernetes.io/provisioned-by: rancher.io/local-path
+  name: &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt; .Release.Name &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;-pv
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 8Gi
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt; .Release.Name &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;-data
+    namespace: &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt; .Release.Namespace &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+  hostPath:
+    path: &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt; .Values.localDev.path &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+    type: DirectoryOrCreate
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt; .Values.localDev.storageClassName &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt;- end &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt; .Release.Name &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 8Gi
+  storageClassName: &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt; .Values.localDev.storageClassName &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt;- end &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h1 id=&#34;deploymentyaml&#34;&gt;deployment.yaml&lt;/h1&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;apiVersion: apps/v1
+kind: Deployment
+metadata:
+spec:
+  template:
+    spec:
+      volumes:
+        &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt;- &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; .Values.localDev.enabled &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+        - name: data
+          persistentVolumeClaim:
+            claimName: &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt; .Release.Name &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;-data
+        &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt;- end &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+        &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt;- toYaml .Values.podSecurityContext | nindent &lt;span style=&#34;color:#ae81ff&#34;&gt;8&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+      containers:
+        - name: &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt; .Chart.Name &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+          &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt;- &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; .Values.localDev.enabled &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+          volumeMounts:
+            - name: data
+              mountPath: /app/app
+              subPath: app
+            - name: data
+              mountPath: /app/config
+              subPath: config
+            - name: data
+              mountPath: /app/lib
+              subPath: lib
+            - name: data
+              mountPath: /app/lib
+              subPath: lib
+            - name: data
+              mountPath: /app/Gemfile
+              subPath: Gemfile
+            - name: data
+              mountPath: /app/Gemfile.lock
+              subPath: Gemfile.lock
+            - name: data
+              mountPath: /app/package.json
+              subPath: package.json
+            - name: data
+              mountPath: /app/yarn.lock
+              subPath: yarn.lock
+          &lt;span style=&#34;color:#f92672&#34;&gt;{{&lt;/span&gt;- end &lt;span style=&#34;color:#f92672&#34;&gt;}}&lt;/span&gt;
+...
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;In the deployment maniest, we mount the pv we created above into the apps workdir. in the example above, I only mount in the directories and paths that I know churn often. If we were to mount in the whole $pwd we&amp;rsquo;d have terribly slow development due to the speed of &lt;code&gt;local-path&lt;/code&gt; pv.&lt;/p&gt;
+&lt;p&gt;I then wrap the whole thing up into a small shell script. we use nerdctl to build the image into the k8s.io namespace (so that kuberentes can pick it up), and then deploy the helm chart into the &lt;code&gt;rancher-destkop&lt;/code&gt; context&lt;/p&gt;
+&lt;h1 id=&#34;bindeploy-localsh&#34;&gt;./bin/deploy-local.sh&lt;/h1&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;#!/bin/bash
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;
+tag&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;$(&lt;/span&gt;uuidgen&lt;span style=&#34;color:#66d9ef&#34;&gt;)&lt;/span&gt;
+repo&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;$(&lt;/span&gt;basename &lt;span style=&#34;color:#66d9ef&#34;&gt;$(&lt;/span&gt;pwd&lt;span style=&#34;color:#66d9ef&#34;&gt;))&lt;/span&gt;
+chart_location&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;CHART_LOCATION&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# make sure we are in the rancher-desktop context,&lt;/span&gt;
+kubectx rancher-desktop
+kubectl create namespace $repo
+kubens $repo
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# build image into k8s.io namespace (so rancher can pull it)&lt;/span&gt;
+nerdctl -n k8s.io build -t $repo:$tag .
+
+helm upgrade --install $repo &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;  --set image.repository&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;$repo &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;  --set image.tag&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;$tag &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;  --set localDev.enabled&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;true&amp;#39;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;  --set localDev.path&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;$(&lt;/span&gt;pwd&lt;span style=&#34;color:#66d9ef&#34;&gt;)&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;  --set command&lt;span style=&#34;color:#f92672&#34;&gt;={&lt;/span&gt;sleep,infinity&lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;  --set redis.storageClass&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;local-path&amp;#39;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;  --set &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;additionalEnv[0].name&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SYMWS_PIN&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;  --set &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;additionalEnv[0].value&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;SYMWS_PIN&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;  --set &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;additionalEnv[1].name&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SYMWS_URL&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;  --set &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;additionalEnv[1].value&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;SYMWS_URL&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;  --set &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;additionalEnv[2].name&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SYMWS_USERNAME&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;  --set &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;additionalEnv[2].value&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;${&lt;/span&gt;SYMWS_USERNAME&lt;span style=&#34;color:#e6db74&#34;&gt;}&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;  $chart_location
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;once the chart has been deployed, i &amp;ldquo;pop a shell&amp;rdquo; into the app container, set the rails env, and startup the app&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;kubectl exec -it $(kubectl get pods -l app.kubernetes.io/name=app -o name) -- bash
+bundle exec rails s -b &#39;0.0.0.0&#39;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;I run &lt;code&gt;rails s&lt;/code&gt; by hand, instead of allowing the containers &lt;code&gt;command:&lt;/code&gt; to do it, so that i can have an shell that i can &lt;code&gt;ctrl+c&lt;/code&gt; and a shell that &lt;code&gt;binding.pry&lt;/code&gt; works with.&lt;/p&gt;
+&lt;p&gt;Lastly, I do a port forward to the pod, and party&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;kubectl port-forward $(kubectl get pods -l app.kubernetes.io/name=app -o name) 3000:3000
+&lt;/code&gt;&lt;/pre&gt;</content>
     </item>
     
   </channel>

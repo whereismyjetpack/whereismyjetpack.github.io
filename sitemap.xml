@@ -1,29 +1,21 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
-  
   <url>
-    <loc>/categories/</loc>
+    <loc>https://whereismyjetpack.github.io/posts/local-development-with-rancher-desktop/</loc>
+    <lastmod>2021-10-14T08:36:13-04:00</lastmod>
+  </url><url>
+    <loc>https://whereismyjetpack.github.io/posts/</loc>
+    <lastmod>2021-10-14T08:36:13-04:00</lastmod>
+  </url><url>
+    <loc>https://whereismyjetpack.github.io/</loc>
+    <lastmod>2021-10-14T08:36:13-04:00</lastmod>
+  </url><url>
+    <loc>https://whereismyjetpack.github.io/about/</loc>
+    <lastmod>2021-10-14T08:31:33-04:00</lastmod>
+  </url><url>
+    <loc>https://whereismyjetpack.github.io/categories/</loc>
+  </url><url>
+    <loc>https://whereismyjetpack.github.io/tags/</loc>
   </url>
-  
-  <url>
-    <loc>/posts/my-first-post/</loc>
-  </url>
-  
-  <url>
-    <loc>/posts/</loc>
-  </url>
-  
-  <url>
-    <loc>/tags/</loc>
-  </url>
-  
-  <url>
-    <loc>/</loc>
-  </url>
-  
-  <url>
-    <loc>/tags/wut/</loc>
-  </url>
-  
 </urlset>
