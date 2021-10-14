@@ -25,9 +25,11 @@ echo &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;myapp-config&amp;#34;&lt
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;export CHART_LOCATION&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;myapp-config/chart
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;in real life, i use direnv (&lt;a href=&#34;https://direnv.net/&#34;&gt;https://direnv.net/&lt;/a&gt;) to manage my project specific configuration&lt;/p&gt;
 &lt;p&gt;Then, I modify the apps helm chart to be compatible with my local development workflow. This mainly consists of&lt;/p&gt;
-&lt;p&gt;1.) overriding the main apps &lt;code&gt;command&lt;/code&gt;
-2.) mounting my &lt;code&gt;pwd&lt;/code&gt; into the app containers &lt;code&gt;WORKDIR&lt;/code&gt;
-3.) injecting some variables into the container&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;overriding the main apps &lt;code&gt;command&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;mounting my &lt;code&gt;pwd&lt;/code&gt; into the app containers &lt;code&gt;WORKDIR&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;injecting some variables into the container&lt;/li&gt;
+&lt;/ul&gt;
 &lt;h1 id=&#34;valuesyaml&#34;&gt;values.yaml&lt;/h1&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;...
 localDev:
